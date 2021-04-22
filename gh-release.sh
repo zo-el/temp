@@ -16,7 +16,7 @@ generate_post_data()
 {
   "tag_name": "$version",
   "target_commitish": "$branch",
-  "name": "$version",
+  "name": "v$version",
   "body": "$text",
   "draft": true,
   "prerelease": false
