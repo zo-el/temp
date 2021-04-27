@@ -25,4 +25,36 @@ EOF
 }
 
 echo "Create release $version for repo: $USER/$REPO branch: $branch"
-curl --data "$(generate_post_data)" "https://api.github.com/repos/$USER/$REPO/releases?access_token=$token"
+
+payload=$(
+  jq --null-input \
+     --arg tag "$version" \
+     --arg name "v$version" \
+     --arg body "$text" \
+     '{ tag_name: $tag, name: $name, body: $body, draft: true }'
+)
+
+response=$(
+  curl --fail \
+       --netrc \
+       --silent \
+       --location \
+       --data "$(generate_post_data)" \
+       "https://api.github.com/repos/${USER}/${REPO}/releases?access_token=$token"
+)
+
+echo "RESPONSE URL: $response"
+upload_url="$(echo "$response" | jq -r .upload_url | sed -e "s/{?name,label}//")"
+echo "UPLOAD URL: $upload_url"
+happ_file='core-app.happ'
+curl --netrc \
+     -H "Authorization: token $token" \
+     -H "Content-Type: $(file -b --mime-type $happ_file)" \
+     --data-binary "@$happ_file" \
+     "$upload_url?name=$(basename "$happ_file")"
+dna_file='holo-hosting-app.dna'
+curl --netrc \
+    -H "Authorization: token $token" \
+    -H "Content-Type: $(file -b --mime-type $dna_file)" \
+    --data-binary "@$dna_file" \
+    "$upload_url?name=$(basename "$dna_file")"
